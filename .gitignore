@@ -1,0 +1,18 @@
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+
+# --- Python / Ray ---
+__pycache__/
+*.pyc
+venv/
+.env
+
+# --- Kubernetes / Local Dev ---
+kubeconfig
+.DS_Store
+.idea/
+.vscode/
