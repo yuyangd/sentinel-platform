@@ -1,0 +1,23 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+# 1. Control Plane Node (Simulating the Master)
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 8265 # Ray Dashboard
+    hostPort: 8265
+    protocol: TCP
+  - containerPort: 8000 # Ray Serve (Inference)
+    hostPort: 8000
+    protocol: TCP
+
+# 2. Worker Node 1 (Simulating a general compute node)
+- role: worker
+  labels:
+    node-type: general-compute
+
+# 3. Worker Node 2 (Simulating a specialized/GPU node - mock it with labels)
+- role: worker
+  labels:
+    node-type: ml-compute
+    accelerator: mock-gpu # use NodeSelectors to force Ray Workers here later

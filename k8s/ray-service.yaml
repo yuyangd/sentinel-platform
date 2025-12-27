@@ -1,0 +1,60 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: sentinel-service
+spec:
+  # 1. Define the Serve Config (The Application)
+  serveConfigV2: |
+    applications:
+      - name: sentinel
+        # Import path must match your code structure inside the container.
+        # Dockerfile puts code in /app/serve/main.py and PYTHONPATH includes /app.
+        import_path: serve.main:deployment
+        route_prefix: /
+        runtime_env: {} 
+        # No working_dir needed because code is baked into the Docker image.
+
+  # 2. Define the Cluster Config (The Infrastructure)
+  rayClusterConfig:
+    rayVersion: '2.9.0'
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: '0.0.0.0'
+      template:
+        spec:
+          containers:
+          - name: ray-head
+            image: duyuyang545/sentinel:v1
+            imagePullPolicy: Always
+            ports:
+            - containerPort: 8265
+              name: dashboard
+            - containerPort: 8000
+              name: serve
+            resources:
+              limits:
+                cpu: "1"
+                memory: "4Gi"
+              requests:
+                cpu: "500m"
+                memory: "1Gi"
+    workerGroupSpecs:
+    - replicas: 1
+      minReplicas: 1
+      maxReplicas: 5
+      groupName: worker-group
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+          - name: ray-worker
+            # Workers also need the custom image to run the replicas
+            image: duyuyang545/sentinel:v1
+            imagePullPolicy: Always
+            resources:
+              limits:
+                cpu: "1"
+                memory: "1Gi"
+              requests:
+                cpu: "500m"
+                memory: "512Mi"
