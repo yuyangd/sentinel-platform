@@ -24,18 +24,16 @@ def train_func(config):
     print("Loading dataset...")
     dataset = load_dataset("glue", "mrpc")
     
-    # --- CHANGE 1: Use TinyBERT Tokenizer ---
     model_name = "prajjwal1/bert-tiny"
     print(f"Loading tokenizer for: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def tokenize_function(examples):
-        return tokenizer(examples["sentence1"], examples["sentence2"], padding="max_length", truncation=True)
+        return tokenizer(examples["sentence1"], examples["sentence2"], truncation=True)
 
     tokenized_datasets = dataset.map(tokenize_function, batched=True)
     
     # 3. Prepare Model
-    # --- CHANGE 2: Use TinyBERT Model ---
     print(f"Loading model: {model_name}")
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
 
@@ -62,8 +60,7 @@ def train_func(config):
         push_to_hub=False,
         report_to="mlflow", 
         disable_tqdm=True,
-        # Keep this at 0! It prevents the shared memory crash.
-        dataloader_num_workers=0, 
+        dataloader_num_workers=0, # Keep at 0 for memory safety
         use_cpu=True       
     )
 
@@ -73,6 +70,7 @@ def train_func(config):
         train_dataset=tokenized_datasets["train"].shard(index=0, num_shards=10), 
         eval_dataset=tokenized_datasets["validation"].shard(index=0, num_shards=10),
         compute_metrics=compute_metrics,
+        tokenizer=tokenizer, 
     )
 
     # 6. Ray Callback
@@ -90,7 +88,6 @@ if __name__ == "__main__":
         ray.shutdown()
     ray.init() 
 
-    # --- CHANGE 3: Update Experiment Name ---
     experiment_name = "sentinel-bert-tiny"
 
     # Define the Ray Trainer
