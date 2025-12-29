@@ -10,10 +10,24 @@ It demonstrates how to provision and manage a distributed compute environment fo
 * **IaC:** Terraform
 * **Scripting:** Python
 
+## Create kubernetes cluster
+
+```bash
+kind create cluster --config kind-config.yaml --name sentinel-platform
+```
+
+## Install kuberay
+
+bin/install-ray.sh
+
+## create sentinel service
+
+bin/create-service.sh
+
 ## Open Ray Dashboard
 
 ```bash
-kubectl port-forward service/sentinel-ray-cluster-head-svc 8265:8265
+kubectl port-forward svc/sentinel-service-head-svc 8265:8265
 ```
 
 Browser: http://localhost:8265/

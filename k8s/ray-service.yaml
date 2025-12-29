@@ -16,7 +16,7 @@ spec:
 
   # 2. Define the Cluster Config (The Infrastructure)
   rayClusterConfig:
-    rayVersion: '2.9.0'
+    rayVersion: '2.53.0'
     headGroupSpec:
       rayStartParams:
         dashboard-host: '0.0.0.0'
@@ -24,7 +24,7 @@ spec:
         spec:
           containers:
           - name: ray-head
-            image: duyuyang545/sentinel:v1
+            image: duyuyang545/sentinel:v2
             imagePullPolicy: Always
             ports:
             - containerPort: 8265
@@ -49,7 +49,7 @@ spec:
           containers:
           - name: ray-worker
             # Workers also need the custom image to run the replicas
-            image: duyuyang545/sentinel:v1
+            image: duyuyang545/sentinel:v2
             imagePullPolicy: Always
             resources:
               limits:

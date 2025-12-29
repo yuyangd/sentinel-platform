@@ -1,0 +1,85 @@
+# --- Postgres Database (For Metadata) ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: postgresql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+spec:
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+      - name: postgresql
+        image: postgres:13
+        env:
+        - name: POSTGRES_USER
+          value: "mlflow"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: POSTGRES_DB
+          value: "mlflow"
+        ports:
+        - containerPort: 5432
+
+---
+# --- MLflow Tracking Server ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      targetPort: 5000
+  selector:
+    app: mlflow
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+      - name: mlflow
+        image: duyuyang545/mlflow-custom:v1
+        command: ["mlflow", "server"]
+        args:
+          - "--host=0.0.0.0"
+          - "--port=5000"
+          - "--backend-store-uri=postgresql://mlflow:password@postgresql:5432/mlflow"
+          - "--default-artifact-root=s3://mlflow/"
+          - "--artifacts-destination=s3://mlflow/"
+        env:
+        # Connect to MinIO (S3 Compatible)
+        - name: MLFLOW_S3_ENDPOINT_URL
+          value: "http://minio:9000"
+        - name: AWS_ACCESS_KEY_ID
+          value: "admin"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "password"
+        ports:
+        - containerPort: 5000

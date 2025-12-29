@@ -3,9 +3,12 @@ name = "sentinel-platform"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.9"
 dependencies = ["ray (>=2.53.0,<3.0.0)"]
 
+[tool.poetry]
+# This tells Poetry 2.0: "Just install dependencies, don't build this project as a package"
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
