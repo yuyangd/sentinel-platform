@@ -11,8 +11,10 @@ spec:
         # Dockerfile puts code in /app/serve/main.py and PYTHONPATH includes /app.
         import_path: serve.main:deployment
         route_prefix: /
-        runtime_env: {} 
-        # No working_dir needed because code is baked into the Docker image.
+        runtime_env:
+          pip:
+            - torch
+            - transformers
 
   # 2. Define the Cluster Config (The Infrastructure)
   rayClusterConfig:
@@ -24,7 +26,7 @@ spec:
         spec:
           containers:
           - name: ray-head
-            image: duyuyang545/sentinel:v6
+            image: duyuyang545/sentinel:v7
             imagePullPolicy: IfNotPresent
             ports:
             - containerPort: 8265
@@ -49,7 +51,7 @@ spec:
           containers:
           - name: ray-worker
             # Workers also need the custom image to run the replicas
-            image: duyuyang545/sentinel:v6
+            image: duyuyang545/sentinel:v7
             imagePullPolicy: Always
             resources:
               limits:

@@ -48,14 +48,7 @@ curl -X POST http://localhost:8000/predict \
 
 ## Submit training job
 
-This assume the train/train_job.py exists in the cluster
-```bash
-ray job submit \
-  --runtime-env-json='{"pip": ["transformers", "datasets", "evaluate", "scikit-learn", "mlflow", "torch", "psycopg2-binary", "accelerate"], "env_vars": {"MLFLOW_TRACKING_URI": "http://mlflow:5000"}}' \
-  -- python train/train_job.py
-```
-
-To upload the local train/train_job.py to the cluster, use `--working-dir`
+To upload the local train/train_job.py to the cluster, use `--working-dir`, otherwise, ray assume the file exists
 
 ```bash
 ray job submit \
