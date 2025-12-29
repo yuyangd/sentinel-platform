@@ -51,7 +51,8 @@ def train_func(config):
     training_args = TrainingArguments(
         output_dir="test_trainer",
         eval_strategy="epoch",
-        save_strategy="epoch",
+        save_strategy="no",  # Do not save the checkpoint
+        load_best_model_at_end=False,
         learning_rate=2e-5,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
@@ -107,7 +108,10 @@ if __name__ == "__main__":
         run_config=RunConfig(
             name=experiment_name,
             storage_path="/tmp/ray_results", 
-            checkpoint_config=CheckpointConfig(num_to_keep=1),
+            checkpoint_config=CheckpointConfig(
+                num_to_keep=0,
+                checkpoint_frequency=0
+            ),
         ),
     )
 
