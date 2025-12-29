@@ -1,6 +1,7 @@
 import ray
 import ray.train.huggingface.transformers
 from ray.train import ScalingConfig, RunConfig, CheckpointConfig
+from ray.air.integrations.mlflow import MLflowLoggerCallback
 from ray.train.torch import TorchTrainer
 import mlflow
 import os
@@ -110,7 +111,7 @@ if __name__ == "__main__":
             storage_path="/tmp/ray_results", # Local storage on head node (ephemeral)
             callbacks=[
                 # Ray's native MLflow integration
-                ray.train.callbacks.MLflowLoggerCallback(
+                MLflowLoggerCallback(
                     tracking_uri=mlflow_tracking_uri,
                     experiment_name=experiment_name,
                     save_artifact=True

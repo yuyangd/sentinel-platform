@@ -45,3 +45,11 @@ curl -X POST http://localhost:8000/predict \
 -H "Content-Type: application/json" \
 -d '{"text": "Ray Serve is amazing!"}'
 ```
+
+## Submit training job
+
+```bash
+ray job submit \
+  --runtime-env-json='{"pip": ["transformers", "datasets", "evaluate", "scikit-learn", "mlflow", "torch", "psycopg2-binary", "accelerate"], "env_vars": {"MLFLOW_TRACKING_URI": "http://mlflow:5000"}}' \
+  -- python train/train_job.py
+```

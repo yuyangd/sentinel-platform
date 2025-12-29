@@ -23,3 +23,4 @@ WORKDIR /app
 # Copy the application code
 # This copies the 'serve' folder into /app/serve
 COPY serve/ /app/serve
+COPY train/ /app/train
