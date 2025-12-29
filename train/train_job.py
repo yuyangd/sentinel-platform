@@ -109,8 +109,7 @@ if __name__ == "__main__":
             name=experiment_name,
             storage_path="/tmp/ray_results", 
             checkpoint_config=CheckpointConfig(
-                num_to_keep=0,
-                checkpoint_frequency=0
+                num_to_keep=None
             ),
         ),
     )
