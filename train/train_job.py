@@ -16,20 +16,18 @@ def train_func(config):
         Trainer,
     )
 
-    # 1. Recover variables from config
-    # Since we can't set env vars in ray.init, we pass them via config
+    # 1. Recover variables
     experiment_name = config.get("mlflow_experiment_name", "sentinel-default")
-    
-    # Set the env var locally for this worker process so HF picks it up
     os.environ["MLFLOW_EXPERIMENT_NAME"] = experiment_name
     
-    # Note: MLFLOW_TRACKING_URI is already set by your RayJob YAML, 
-    # so we don't need to touch it here.
-
     # 2. Load Data
     print("Loading dataset...")
     dataset = load_dataset("glue", "mrpc")
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    
+    # --- CHANGE 1: Use TinyBERT Tokenizer ---
+    model_name = "prajjwal1/bert-tiny"
+    print(f"Loading tokenizer for: {model_name}")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def tokenize_function(examples):
         return tokenizer(examples["sentence1"], examples["sentence2"], padding="max_length", truncation=True)
@@ -37,8 +35,9 @@ def train_func(config):
     tokenized_datasets = dataset.map(tokenize_function, batched=True)
     
     # 3. Prepare Model
-    print("Loading model...")
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    # --- CHANGE 2: Use TinyBERT Model ---
+    print(f"Loading model: {model_name}")
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
 
     # 4. Metrics
     metric = evaluate.load("glue", "mrpc")
@@ -56,14 +55,15 @@ def train_func(config):
         eval_strategy="epoch",
         save_strategy="epoch",
         learning_rate=2e-5,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
         num_train_epochs=config.get("epochs", 1), 
         weight_decay=0.01,
         push_to_hub=False,
-        report_to="mlflow",  # Native HF integration
-        disable_tqdm=True, 
-        no_cuda=True,      
+        report_to="mlflow", 
+        disable_tqdm=True,
+        # Keep this at 0! It prevents the shared memory crash.
+        dataloader_num_workers=0, 
         use_cpu=True       
     )
 
@@ -86,19 +86,16 @@ def train_func(config):
 
 # --- 2. The Orchestration Logic ---
 if __name__ == "__main__":
-    # --- FIX: Initialize without runtime_env ---
-    # We assume the RayJob YAML has already set up the environment (pip packages, basic env vars).
     if ray.is_initialized():
         ray.shutdown()
     ray.init() 
 
-    # Dynamic variables we want to control from code
-    experiment_name = "sentinel-bert-finetune"
+    # --- CHANGE 3: Update Experiment Name ---
+    experiment_name = "sentinel-bert-tiny"
 
     # Define the Ray Trainer
     trainer = TorchTrainer(
         train_loop_per_worker=train_func,
-        # Pass the experiment name dynamically to workers
         train_loop_config={
             "epochs": 2,
             "mlflow_experiment_name": experiment_name
@@ -107,8 +104,6 @@ if __name__ == "__main__":
         scaling_config=ScalingConfig(
             num_workers=1, 
             use_gpu=False,
-            # Tell Ray each worker only "costs" 0.5 CPU.
-            # This allows 2 workers to run even if you only have 1 CPU free.
             resources_per_worker={"CPU": 1}
         ), 
         
