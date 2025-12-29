@@ -105,11 +105,11 @@ if __name__ == "__main__":
         }, 
         
         scaling_config=ScalingConfig(
-            num_workers=2, 
+            num_workers=1, 
             use_gpu=False,
             # Tell Ray each worker only "costs" 0.5 CPU.
             # This allows 2 workers to run even if you only have 1 CPU free.
-            resources_per_worker={"CPU": 0.5}
+            resources_per_worker={"CPU": 1}
         ), 
         
         run_config=RunConfig(

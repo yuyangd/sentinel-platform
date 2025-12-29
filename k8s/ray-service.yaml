@@ -33,15 +33,15 @@ spec:
               name: serve
             resources:
               limits:
-                cpu: "1"
-                memory: "4Gi"
+                cpu: "2"
+                memory: "5Gi"
               requests:
-                cpu: "500m"
-                memory: "1Gi"
+                cpu: "2"
+                memory: "5Gi"
     workerGroupSpecs:
     - replicas: 1
       minReplicas: 1
-      maxReplicas: 5
+      maxReplicas: 1
       groupName: worker-group
       rayStartParams: {}
       template:
@@ -53,8 +53,8 @@ spec:
             imagePullPolicy: Always
             resources:
               limits:
-                cpu: "1"
-                memory: "1Gi"
+                cpu: "2"
+                memory: "4Gi"
               requests:
-                cpu: "500m"
-                memory: "512Mi"
+                cpu: "2"
+                memory: "4Gi"
