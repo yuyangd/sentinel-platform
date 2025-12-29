@@ -1,67 +1,88 @@
 import ray
 from ray import serve
 from fastapi import FastAPI
+from pydantic import BaseModel
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 app = FastAPI()
 
+# Define the input structure explicitly
+class FactCheckRequest(BaseModel):
+    query: str
+    facts: dict
+
 @serve.deployment(
     num_replicas=1, 
-    ray_actor_options={"num_cpus": 0.5, "num_gpus": 0}
+    ray_actor_options={"num_cpus": 0.5}
 )
 @serve.ingress(app)
-class SentinelModel:
+class FactCheckGuardrail:
     def __init__(self):
-        print("Initializing Sentinel Model (TinyBERT)...")
-        # 1. Load the Model & Tokenizer
-        # In the future, this path will be your S3 bucket or local checkpoint path
-        model_name = "prajjwal1/bert-tiny" 
-        
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
-        
-        # Optimize for inference (turn off gradient calculation)
-        self.model.eval() 
-        print("Model Initialized!")
+        print("Initializing Fact-Check Guardrail...")
+        # We use a model specifically trained for NLI (Truth checking)
+        self.model_name = "cross-encoder/nli-distilroberta-base"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+        self.model.eval()
 
-    @app.post("/predict")
-    def predict(self, data: dict):
-        # 2. Parse Input
-        text = data.get("text", "")
-        if not text:
-            return {"error": "No text provided"}
+    def linearize_facts(self, facts: dict) -> str:
+            """Converts JSON facts into natural language statements."""
+            statements = []
+            for key, value in facts.items():
+                # Handle Booleans explicitly
+                if isinstance(value, bool):
+                    if value:
+                        statements.append(f"The property has a {key}.")
+                    else:
+                        statements.append(f"The property does not have a {key}.")
+                # Handle Numbers/Strings
+                else:
+                    statements.append(f"The number of {key} is {value}.")
+            
+            return " ".join(statements)
 
-        # 3. Preprocess (Tokenize)
+    @app.post("/check")
+    def check_facts(self, request: FactCheckRequest):
+        # 1. Prepare the "Truth" (Premise)
+        premise = self.linearize_facts(request.facts)
+        
+        # 2. Prepare the "Claim" (Hypothesis)
+        hypothesis = request.query
+
+        # 3. Tokenize as a pair
         inputs = self.tokenizer(
-            text, 
-            padding=True, 
+            premise, 
+            hypothesis, 
+            return_tensors="pt", 
             truncation=True, 
-            return_tensors="pt"
+            padding=True
         )
 
         # 4. Inference
         with torch.no_grad():
             outputs = self.model(**inputs)
+            # The model outputs 3 scores: [Contradiction, Entailment, Neutral]
+            # (Note: specific models vary on index order, standard for this one is usually C/E/N)
             logits = outputs.logits
-            
-            # Convert logits to probabilities (Softmax)
             probs = torch.nn.functional.softmax(logits, dim=-1)
             
-            # Get the predicted class (0 or 1)
-            predicted_class_id = torch.argmax(probs, dim=-1).item()
-            confidence = probs[0][predicted_class_id].item()
+            # For this specific model: Label 0 = Contradiction, Label 1 = Entailment
+            contradiction_score = probs[0][0].item()
+            entailment_score = probs[0][1].item()
 
-        # 5. Map to labels (MRPC dataset is "Not Equivalent" vs "Equivalent")
-        labels = ["Not Equivalent", "Equivalent"]
-        prediction_label = labels[predicted_class_id]
-
+        # 5. Business Logic (The Guardrail)
+        # If contradiction is higher than entailment, we BLOCK.
+        is_safe = entailment_score > contradiction_score
+        
         return {
-            "model": "prajjwal1/bert-tiny",
-            "text": text,
-            "prediction": prediction_label,
-            "confidence": round(confidence, 4)
+            "status": "PASS" if is_safe else "FAIL",
+            "reason": "Fact Contradiction" if not is_safe else "Verified",
+            "scores": {
+                "contradiction": round(contradiction_score, 4),
+                "entailment": round(entailment_score, 4)
+            },
+            "inputs_debug": f"Comparing '{premise}' vs '{hypothesis}'"
         }
 
-# Bind the deployment to the app
-deployment = SentinelModel.bind()
+deployment = FactCheckGuardrail.bind()
