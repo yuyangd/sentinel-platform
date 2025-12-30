@@ -26,7 +26,7 @@ spec:
         spec:
           containers:
           - name: ray-head
-            image: duyuyang545/sentinel:v9
+            image: duyuyang545/sentinel:v10
             imagePullPolicy: IfNotPresent
             ports:
             - containerPort: 8265
@@ -35,11 +35,11 @@ spec:
               name: serve
             resources:
               limits:
-                cpu: "2"
-                memory: "5Gi"
+                cpu: "1"
+                memory: "4Gi"
               requests:
-                cpu: "2"
-                memory: "5Gi"
+                cpu: "1"
+                memory: "4Gi"
     workerGroupSpecs:
     - replicas: 1
       minReplicas: 1
@@ -51,12 +51,12 @@ spec:
           containers:
           - name: ray-worker
             # Workers also need the custom image to run the replicas
-            image: duyuyang545/sentinel:v9
+            image: duyuyang545/sentinel:v10
             imagePullPolicy: Always
             resources:
               limits:
-                cpu: "2"
+                cpu: "1"
                 memory: "4Gi"
               requests:
-                cpu: "2"
+                cpu: "1"
                 memory: "4Gi"

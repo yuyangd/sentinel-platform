@@ -56,3 +56,20 @@ ray job submit \
   --runtime-env-json='{"pip": ["transformers", "datasets", "evaluate", "scikit-learn", "mlflow", "torch", "psycopg2-binary", "accelerate"], "env_vars": {"MLFLOW_TRACKING_URI": "http://mlflow:5000"}}' \
   -- python train/train_job.py
 ```
+
+## Install ekscli
+
+
+homebrew
+
+```
+brew tap aws/tap
+brew install aws/tap/eksctl
+```
+
+Create an EKS cluster
+
+```
+eksctl create cluster -f eks/cluster.yaml
+eksctl delete cluster -f eks/cluster.yaml
+```
