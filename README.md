@@ -70,6 +70,40 @@ brew install aws/tap/eksctl
 Create an EKS cluster
 
 ```
-eksctl create cluster -f eks/cluster.yaml
+eksctl create cluster -f eks/cluster.yaml --with-oidc
+```
+
+create a namespace
+
+```
+kubectl create namespace sentinel-prod
+
+kubectl apply -f k8s/ray-service.yaml
+```
+
+Tag the subnets, so eks can place the loadbalancer
+
+```
+--tags Key=kubernetes.io/role/elb,Value=1
+``
+
+## Serve
+
+```
+curl -X POST http://ad5a958df008b47d9b082f731650947a-717393962.ap-southeast-2.elb.amazonaws.com:8000/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "This property has 2 bedrooms and a pool.",
+    "facts": {
+        "bedrooms": 2,
+        "pool": true
+    }
+  }'
+```
+
+## Clean the eks cluster
+
+```
+kubectl delete svc sentinel-service-serve-svc -n sentinel-prod
 eksctl delete cluster -f eks/cluster.yaml
 ```

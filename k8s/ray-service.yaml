@@ -2,7 +2,20 @@ apiVersion: ray.io/v1
 kind: RayService
 metadata:
   name: sentinel-service
+  namespace: sentinel-prod
 spec:
+  # 0. Define a classic load balancer to route traffic
+  serveService:
+      metadata:
+        name: sentinel-service-serve-svc # Explicitly naming it helps debugging
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Owner=du.y,Project=training,rea-system-id=x-du-yuyang"
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 8000
+          targetPort: 8000
+          name: serve
   # 1. Define the Serve Config (The Application)
   serveConfigV2: |
     applications:
