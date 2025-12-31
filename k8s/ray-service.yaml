@@ -9,6 +9,7 @@ spec:
       metadata:
         name: sentinel-service-serve-svc # Explicitly naming it helps debugging
         annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
           service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Owner=du.y,Project=training,rea-system-id=x-du-yuyang"
       spec:
         type: LoadBalancer
@@ -26,7 +27,6 @@ spec:
         route_prefix: /
         runtime_env:
           pip:
-            - torch
             - transformers
 
   # 2. Define the Cluster Config (The Infrastructure)
@@ -39,7 +39,7 @@ spec:
         spec:
           containers:
           - name: ray-head
-            image: duyuyang545/sentinel:v10
+            image: duyuyang545/sentinel-serve:v1
             imagePullPolicy: IfNotPresent
             ports:
             - containerPort: 8265
@@ -64,7 +64,7 @@ spec:
           containers:
           - name: ray-worker
             # Workers also need the custom image to run the replicas
-            image: duyuyang545/sentinel:v10
+            image: duyuyang545/sentinel-serve:v1
             imagePullPolicy: Always
             resources:
               limits:

@@ -1,0 +1,55 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: sentinel-training-cluster
+  namespace: sentinel-prod
+spec:
+  rayVersion: '2.53.0' # Matches the image version below
+  # 1. The Head Node (Orchestrator)
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: '0.0.0.0'
+    template:
+      spec:
+        serviceAccountName: ray-service-account
+        containers:
+        - name: ray-head
+          image: duyuyang545/sentinel-train:v1
+          env:
+          - name: RAY_PROMETHEUS_HOST
+            value: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+          - name: RAY_GRAFANA_HOST
+            value: "http://prometheus-grafana.monitoring.svc.cluster.local:80"
+          - name: RAY_GRAFANA_IFRAME_HOST
+            value: "http://localhost:3000"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "4Gi"
+            requests:
+              cpu: "1"
+              memory: "4Gi"
+          ports:
+          - containerPort: 8265
+            name: dashboard
+
+  # 2. The Worker Nodes (Where the training happens)
+  workerGroupSpecs:
+  - replicas: 1
+    minReplicas: 1
+    maxReplicas: 2
+    groupName: small-group
+    rayStartParams: {}
+    template:
+      spec:
+        serviceAccountName: ray-service-account
+        containers:
+        - name: ray-worker
+          image: duyuyang545/sentinel-train:v1
+          resources:
+            limits:
+              cpu: "1"
+              memory: "4Gi"
+            requests:
+              cpu: "1"
+              memory: "4Gi"

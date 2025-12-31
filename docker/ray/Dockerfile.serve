@@ -1,0 +1,12 @@
+FROM rayproject/ray:2.53.0-aarch64
+
+# Dependencies required for serving
+RUN pip3 install --no-cache-dir torch
+
+USER root
+RUN mkdir -p /app
+
+# Set the working directory
+WORKDIR /app
+
+COPY serve/ /app/serve

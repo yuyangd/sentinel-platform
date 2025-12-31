@@ -57,7 +57,9 @@ ray job submit \
   -- python train/train_job.py
 ```
 
-## Install ekscli
+## Production
+
+### Install ekscli
 
 
 homebrew
@@ -67,29 +69,92 @@ brew tap aws/tap
 brew install aws/tap/eksctl
 ```
 
-Create an EKS cluster
+### Create an EKS cluster
 
 ```
 eksctl create cluster -f eks/cluster.yaml --with-oidc
 ```
 
-create a namespace
+### create a namespace
 
-```
+```bash
 kubectl create namespace sentinel-prod
-
-kubectl apply -f k8s/ray-service.yaml
 ```
 
-Tag the subnets, so eks can place the loadbalancer
+### Tag the subnets, so eks can place the loadbalancer
 
 ```
 --tags Key=kubernetes.io/role/elb,Value=1
-``
+```
+
+### Create s3 bucket for artefacts
+
+```bash
+aws s3 mb s3://training-artifacts-du-yuyang --region ap-southeast-2
+```
+
+### Create the iam policy
+
+```bash
+aws iam create-policy --policy-name SentinelS3Access --policy-document file://aws/s3-policy.json
+```
+
+output: arn:aws:iam::669382012465:policy/SentinelS3Access
+
+### Create IAM role with s3 policy, create k8s service account to annotated with the IAM role
+
+```bash
+# associate the IODC
+eksctl utils associate-iam-oidc-provider \
+  --region=ap-southeast-2 \
+  --cluster=du-yuyang-training \
+  --approve
+
+
+eksctl create iamserviceaccount \
+  --name ray-service-account \
+  --namespace sentinel-prod \
+  --cluster du-yuyang-training \
+  --attach-policy-arn arn:aws:iam::669382012465:policy/SentinelS3Access \
+  --approve
+```
+
+### Create kuberay operator
+
+bin/kuberay-operator.sh
+
+
+### Create monitoring
+
+bin/prometheus.sh
+
+
+## Training cluster
+
+```bash
+kubectl apply -f k8s/ray-cluster-train.yaml
+
+# to access the dashboard
+kubectl port-forward svc/sentinel-training-cluster-head-svc 8265:8265 -n sentinel-prod
+
+# http://localhost:8265
+
+# Submit the job
+ray job submit --address http://localhost:8265 \
+  --working-dir . \
+  -- python train/train_dummy.py
+```
+
 
 ## Serve
 
-```
+```bash
+
+# the serve
+## The service + Load balancer
+kubectl apply -f k8s/ray-service.yaml
+
+# Test
 curl -X POST http://ad5a958df008b47d9b082f731650947a-717393962.ap-southeast-2.elb.amazonaws.com:8000/check \
   -H "Content-Type: application/json" \
   -d '{
@@ -100,6 +165,8 @@ curl -X POST http://ad5a958df008b47d9b082f731650947a-717393962.ap-southeast-2.el
     }
   }'
 ```
+
+
 
 ## Clean the eks cluster
 
