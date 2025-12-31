@@ -151,11 +151,11 @@ ray job submit --address http://localhost:8265 \
 ```bash
 
 # the serve
-## The service + Load balancer
 kubectl apply -f k8s/ray-service.yaml
+## The service + Load balancer
 
 # Test
-curl -X POST http://ad5a958df008b47d9b082f731650947a-717393962.ap-southeast-2.elb.amazonaws.com:8000/check \
+curl -X POST http://a2d3de443c49f47c48ff1475aaeca917-6ce7217cf7820bbe.elb.ap-southeast-2.amazonaws.com:8000/check \
   -H "Content-Type: application/json" \
   -d '{
     "query": "This property has 2 bedrooms and a pool.",

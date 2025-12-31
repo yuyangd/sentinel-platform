@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      ray.io/cluster: sentinel-training-cluster
+      ray.io/node-type: head
   namespaceSelector:
     matchNames:
     - sentinel-prod
