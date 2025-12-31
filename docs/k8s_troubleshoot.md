@@ -49,3 +49,9 @@ kubectl -n sentinel-prod cp $HEAD_POD:/tmp/ray/session_latest/metrics/grafana/da
 
 # ClickOps import into Grafana via UI
 ```
+
+## Check EKS kubernetes version
+
+```bash
+aws eks describe-cluster --name du-yuyang-training --query 'cluster.version' --output text
+```

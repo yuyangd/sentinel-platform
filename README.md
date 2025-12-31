@@ -166,11 +166,41 @@ curl -X POST http://a2d3de443c49f47c48ff1475aaeca917-6ce7217cf7820bbe.elb.ap-sou
   }'
 ```
 
+## Add node group to eks cluster
 
+```bash
+eksctl create nodegroup --config-file=cluster.yaml --include=worker-group-spot-1
+```
+
+## Cluster autoscaling
+
+```bash
+kubectl apply -f k8s/cluster-autoscaler.yaml
+
+# check the logs
+kubectl logs -f deployment/cluster-autoscaler -n kube-system
+
+# if error, edit
+kubectl edit clusterrole cluster-autoscaler
+
+# restart the pod
+kubectl delete pod -n kube-system -l app=cluster-autoscaler
+```
 
 ## Clean the eks cluster
 
+Scale down the workers
+
+```bash
+eksctl scale nodegroup --cluster du-yuyang-training --name managed-ng-1 --nodes 0 --nodes-min 0 --nodes-max 1
+
+eksctl scale nodegroup --cluster du-yuyang-training --name worker-group-spot-1 --nodes 0 --nodes-min 0 --nodes-max 1
 ```
+
+
+Delete the cluster
+
+```bash
 kubectl delete svc sentinel-service-serve-svc -n sentinel-prod
 eksctl delete cluster -f eks/cluster.yaml
 ```

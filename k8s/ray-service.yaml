@@ -28,7 +28,16 @@ spec:
         runtime_env:
           pip:
             - transformers
-
+        deployments:
+          - name: FactCheckGuardrail
+            autoscaling_config:
+              min_replicas: 1
+              max_replicas: 5
+              target_num_ongoing_requests_per_replica: 5 # Aggressive! Scales up if >5 concurrent requests.
+              upscale_delay_s: 1 # Scale up FAST for demos
+              downscale_delay_s: 30 # Scale down slower
+            ray_actor_options:
+              num_cpus: 0.5
   # 2. Define the Cluster Config (The Infrastructure)
   rayClusterConfig:
     rayVersion: '2.53.0'
@@ -61,6 +70,9 @@ spec:
       rayStartParams: {}
       template:
         spec:
+          nodeSelector:
+            intention: training
+            lifecycle: Ec2Spot
           containers:
           - name: ray-worker
             # Workers also need the custom image to run the replicas
@@ -69,7 +81,7 @@ spec:
             resources:
               limits:
                 cpu: "1"
-                memory: "4Gi"
+                memory: "2Gi"
               requests:
                 cpu: "1"
-                memory: "4Gi"
+                memory: "2Gi"
