@@ -195,6 +195,12 @@ Scale down the workers
 eksctl scale nodegroup --cluster du-yuyang-training --name managed-ng-1 --nodes 0 --nodes-min 0 --nodes-max 1
 
 eksctl scale nodegroup --cluster du-yuyang-training --name worker-group-spot-1 --nodes 0 --nodes-min 0 --nodes-max 1
+
+# 1. Turn off CoreDNS (The main blocker)
+kubectl scale deployment coredns -n kube-system --replicas=0
+
+# 2. Turn off Metrics Server (Just in case)
+kubectl scale deployment metrics-server -n kube-system --replicas=0
 ```
 
 
@@ -203,4 +209,16 @@ Delete the cluster
 ```bash
 kubectl delete svc sentinel-service-serve-svc -n sentinel-prod
 eksctl delete cluster -f eks/cluster.yaml
+```
+
+## Next day
+
+Scale up, DNS
+
+```bash
+# "The Wake Up Sequence"
+eksctl scale nodegroup --cluster du-yuyang-training --name managed-ng-1 --nodes 2 --nodes-min 2
+# Wait for nodes to be Ready, then:
+kubectl scale deployment coredns -n kube-system --replicas=2
+kubectl scale deployment metrics-server -n kube-system --replicas=1
 ```
