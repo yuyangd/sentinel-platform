@@ -1,39 +1,105 @@
-# Sentinel Platform
+# Sentinel AI Platform
 
-Sentinel is a reference implementation of a modern **AI Infrastructure Platform**.
+An Enterprise-Grade MLOps Platform for Distributed Training & Serving on Kubernetes.
 
-It demonstrates how to provision and manage a distributed compute environment for Machine Learning (using **Ray**) on top of Kubernetes, following **Infrastructure-as-Code** (IaC) principles with Terraform.
+## Overview
 
-## Platform
+Sentinel is an end-to-end AI Infrastructure Platform designed to demonstrate how to architect, deploy, and scale machine learning workloads in a cloud-native environment.
 
-- Infrastructure: Kubernetes (EKS/K3s) + KubeRay Operator.
-- Orchestration: Ray Jobs for transient workloads
-- Training: Distributed PyTorch via Ray Train (Data Parallelism).
-- Optimization: Ray Tune with ASHA Scheduler (Early stopping saved you ~80% compute on bad trials).
-- Serving: Ray Serve with Identity-Aware deployment (IAM Roles/Secrets).
-- Cicd/Ops: Immutable Infrastructure (Dockerized code) + Declarative Config (YAML scaling rules).
+It solves the "Day 2" challenges of AI engineering:
+
+- **Unified Compute:** Runs Training, Tuning, and Serving on a single KubeRay cluster.
+- **FinOps:** Leverages Karpenter and EC2 Spot Instances to reduce compute costs by up to 90%.
+- **Reliability:** Implements Zero-Downtime rolling updates and traffic-based autoscaling.
+- **Observability:** Full visibility into GPU/CPU metrics via Prometheus and Grafana.
+
+## System Architecture
+
+The platform runs on Amazon EKS, orchestrating Ray clusters via the KubeRay Operator. It separates concerns into distinct planes for Data, Compute, and Observability.
+
+```mermaid
+graph TB
+    subgraph AWS["AWS Cloud"]
+        EKS["Amazon EKS<br/>(Kubernetes Cluster)"]
+        S3["S3 Bucket<br/>(Model Artifacts)"]
+        EC2["EC2 Spot & On-Demand<br/>(Worker Nodes)"]
+    end
+    
+    subgraph K8s["Kubernetes Cluster"]
+        KubeRay["KubeRay Operator<br/>(Ray Cluster Manager)"]
+        
+        subgraph RayTraining["Ray Training Cluster"]
+            TrainHead["Ray Head Node"]
+            TrainWorkers["Ray Worker Nodes<br/>(4+ CPUs)"]
+        end
+        
+        subgraph RayServing["Ray Serving Cluster"]
+            ServeHead["Ray Head Node"]
+            ServeWorkers["Ray Worker Nodes<br/>(0.5 CPU)"]
+        end
+        
+        MLFlow["MLFlow + MinIO<br/>(Experiment Tracking)"]
+        Prometheus["Prometheus + Grafana<br/>(Monitoring)"]
+        ClusterAutoscaler["Karpenter<br/>(Dynamic Scaling)"]
+    end
+    
+    Client["Client<br/>(HTTP/gRPC)"]
+    
+    EKS --> K8s
+    AWS --> EC2
+    Client -->|Inference| RayServing
+    RayTraining --> S3
+    RayTraining --> MLFlow
+    EC2 -.->|Autoscale| ClusterAutoscaler
+```
+
+## Key Features
+
+1. Distributed Training & Tuning
+
+- Frameworks: PyTorch Lightning + Ray Train.
+- Optimization: Hyperparameter tuning using Ray Tune (ASHA Scheduler) to find the best model configuration with minimal compute waste.
+- Tracking: All metrics (Loss, Accuracy) are automatically logged to a self-hosted MLflow instance backed by S3/MinIO.
+
+2. Production Serving (Inference)
+
+- Engine: Ray Serve provides a high-performance HTTP gateway.
+- Scalability: Configured with Horizontal Autoscaling (1-5 replicas) based on request queue depth.
+- Zero-Downtime: Updates use a rolling deployment strategy managed by the RayService CRD.
+
+3. FinOps & Cost Optimization
+
+- Spot Instances: Worker nodes run on AWS Spot Instances (g4dn / g5 series), managed by Karpenter.
+- Scale-to-Zero: Training clusters spin down completely when idle.
+- Node Affinity: Strict nodeSelector rules ensure expensive GPU nodes are only provisioned for ML workloads, not system pods.
 
 ## Tech Stack
 * **Orchestration:** Kubernetes (Kind/EKS)
 * **Compute Framework:** KubeRay (Ray Cluster)
-* **IaC:** Terraform
-* **Scripting:** Python
+* **Registry:** MLflow
+* **Observability** Prometheus, Grafana
 
-## Create kubernetes cluster
+## Getting started
 
-```bash
-kind create cluster --config kind-config.yaml --name sentinel-platform
-```
+## Prerequisites
 
-## Install kuberay
+- AWS CLI & kubectl configured
+- Terraform installed
+- Helm installed
+
+### Create kubernetes cluster
+
+bin/setup_kind.sh
+
+### Install kuberay
 
 bin/install-ray.sh
 
-## create sentinel service
+### create sentinel service
 
 bin/create-service.sh
 
-## Open Ray Dashboard
+### Open Ray Dashboard
 
 ```bash
 kubectl port-forward svc/sentinel-service-head-svc 8265:8265
@@ -41,7 +107,7 @@ kubectl port-forward svc/sentinel-service-head-svc 8265:8265
 
 Browser: http://localhost:8265/
 
-## try inference
+### Inference
 
 ```bash
 kubectl port-forward service/sentinel-service-head-svc 8000:8000
@@ -55,7 +121,7 @@ curl -X POST http://localhost:8000/predict \
 -d '{"text": "Ray Serve is amazing!"}'
 ```
 
-## Submit training job
+### Submit training job
 
 To upload the local train/train_job.py to the cluster, use `--working-dir`, otherwise, ray assume the file exists
 
@@ -63,10 +129,10 @@ To upload the local train/train_job.py to the cluster, use `--working-dir`, othe
 ray job submit \
   --working-dir . \
   --runtime-env-json='{"pip": ["transformers", "datasets", "evaluate", "scikit-learn", "mlflow", "torch", "psycopg2-binary", "accelerate"], "env_vars": {"MLFLOW_TRACKING_URI": "http://mlflow:5000"}}' \
-  -- python train/train_job.py
+  -- python jobs/train/train_job.py
 ```
 
-## Production
+## Production in EKS
 
 ### Install ekscli
 
@@ -141,7 +207,7 @@ bin/prometheus.sh
 ## Training cluster
 
 ```bash
-kubectl apply -f k8s/ray-cluster-train.yaml
+kubectl apply -f k8s/ray/ray-cluster-train.yaml
 
 # to access the dashboard
 kubectl port-forward svc/sentinel-training-cluster-head-svc 8265:8265 -n sentinel-prod
@@ -151,7 +217,7 @@ kubectl port-forward svc/sentinel-training-cluster-head-svc 8265:8265 -n sentine
 # Submit the job
 ray job submit --address http://localhost:8265 \
   --working-dir . \
-  -- python train/train_dummy.py
+  -- python jobs/train/train_dummy.py
 ```
 
 
@@ -160,7 +226,7 @@ ray job submit --address http://localhost:8265 \
 ```bash
 
 # the serve
-kubectl apply -f k8s/ray-service.yaml
+kubectl apply -f k8s/ray/ray-factcheck-serve.yaml
 ## The service + Load balancer
 
 # Test
@@ -184,7 +250,7 @@ eksctl create nodegroup --config-file=cluster.yaml --include=worker-group-spot-1
 ## Cluster autoscaling
 
 ```bash
-kubectl apply -f k8s/cluster-autoscaler.yaml
+kubectl apply -f k8s/scaler/cluster-autoscaler.yaml
 
 # check the logs
 kubectl logs -f deployment/cluster-autoscaler -n kube-system
@@ -236,9 +302,7 @@ kubectl delete svc sentinel-service-serve-svc -n sentinel-prod
 eksctl delete cluster -f eks/cluster.yaml
 ```
 
-## Next day
-
-Scale up, DNS
+## Scale up, DNS
 
 ```bash
 # "The Wake Up Sequence"
@@ -247,4 +311,3 @@ eksctl scale nodegroup --cluster du-yuyang-training --name managed-ng-1 --nodes 
 kubectl scale deployment coredns -n kube-system --replicas=2
 kubectl scale deployment metrics-server -n kube-system --replicas=1
 ```
-
