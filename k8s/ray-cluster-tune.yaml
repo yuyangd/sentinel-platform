@@ -21,7 +21,7 @@ spec:
         serviceAccountName: ray-service-account
         containers:
         - name: ray-head
-          image: duyuyang545/sentinel-tune:v1.1
+          image: duyuyang545/sentinel-tune:v1.2
           env:
           - name: RAY_PROMETHEUS_HOST
             value: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
@@ -31,10 +31,10 @@ spec:
             value: "http://localhost:3000"
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: "4Gi"
             requests:
-              cpu: "2"
+              cpu: "1"
               memory: "4Gi"
           ports:
           - containerPort: 8265
@@ -52,11 +52,11 @@ spec:
         serviceAccountName: ray-service-account
         containers:
         - name: ray-worker
-          image: duyuyang545/sentinel-tune:v1.1
+          image: duyuyang545/sentinel-tune:v1.2
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: "4Gi"
             requests:
-              cpu: "2"
+              cpu: "1"
               memory: "4Gi"

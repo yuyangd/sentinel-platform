@@ -23,7 +23,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: ray-job-submitter
-        image: duyuyang545/sentinel-tune:v1.1
+        image: duyuyang545/sentinel-tune:v1.2
         imagePullPolicy: Always
         env:
         - name: RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S

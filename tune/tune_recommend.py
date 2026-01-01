@@ -137,7 +137,12 @@ if __name__ == "__main__":
     # This is a template. Ray Tune will clone this for every trial.
     trainer = TorchTrainer(
         train_loop_per_worker=train_func_per_worker,
-        scaling_config=ScalingConfig(num_workers=2, use_gpu=False, resources_per_worker={"CPU": 1}),
+        scaling_config=ScalingConfig(
+            num_workers=1,                 # Lower worker count to reduce CPU bundles
+            use_gpu=False,
+            resources_per_worker={"CPU": 1},
+            trainer_resources={"CPU": 0},  # Avoid reserving an extra CPU for trainer actor
+        ),
         run_config=RunConfig(storage_path=storage_path) # All trials save to S3
     )
 
