@@ -1,7 +1,7 @@
 apiVersion: ray.io/v1
 kind: RayService
 metadata:
-  name: sentinel-service
+  name: sentinel-serving-factcheck
   namespace: sentinel-prod
 spec:
   # 0. Define a classic load balancer to route traffic
@@ -23,7 +23,7 @@ spec:
       - name: sentinel
         # Import path must match your code structure inside the container.
         # Dockerfile puts code in /app/serve/main.py and PYTHONPATH includes /app.
-        import_path: serve.main:deployment
+        import_path: serve.facecheck:deployment
         route_prefix: /
         runtime_env:
           pip:
