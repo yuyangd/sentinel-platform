@@ -1,9 +1,16 @@
 FROM rayproject/ray:2.53.0-aarch64
 
-# Dependencies required for serving
-RUN pip3 install --no-cache-dir torch
-
 USER root
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+# Dependencies required for serving
+RUN pip3 install --no-cache-dir \
+    torch \
+    lightning \
+    starlette \
+    requests \
+    pandas
+
 RUN mkdir -p /app
 
 # Set the working directory

@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import lightning as L
 import os
-import numpy as np
 from ray import serve
 from ray.train import Checkpoint
 from starlette.requests import Request
