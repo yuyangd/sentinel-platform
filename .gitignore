@@ -17,4 +17,4 @@ kubeconfig
 .idea/
 .vscode/
 spike/
-eks/
+data/

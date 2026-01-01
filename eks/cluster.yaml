@@ -1,0 +1,49 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: du-yuyang-training
+  region: ap-southeast-2
+  tags:
+    owner: "du.y"
+    rea-system-id: "x-du-yuyang"
+
+vpc:
+  id: "vpc-8b188eee"  # training
+  subnets:
+    public:
+      ap-southeast-2a: { id: "subnet-a27806c7" }
+      ap-southeast-2b: { id: "subnet-55d7b322" } # EKS requires 2 AZs
+    private:
+      ap-southeast-2a: { id: "subnet-87e897e2" }
+      ap-southeast-2b: { id: "subnet-54d7b323" } # EKS requires 2 AZs
+
+managedNodeGroups:
+  - name: managed-ng-1
+    instanceType: t4g.large
+    minSize: 2
+    maxSize: 3
+    desiredCapacity: 2
+    volumeSize: 50
+    # "privateNetworking: true" forces nodes into the private subnets (Best Practice)
+    privateNetworking: true
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        cloudWatch: true
+        # Required if you want the nodes to pull from ECR later or talk to S3
+        externalDNS: true 
+        certManager: true
+  - name: worker-group-spot-1
+    instanceTypes: ["t4g.medium", "t4g.large"] # Give AWS options to find the cheapest spot
+    spot: true
+    minSize: 0
+    maxSize: 5
+    desiredCapacity: 0
+    privateNetworking: true
+    labels:
+      lifecycle: Ec2Spot
+      intention: training
+    iam:
+      withAddonPolicies:
+        autoScaler: true

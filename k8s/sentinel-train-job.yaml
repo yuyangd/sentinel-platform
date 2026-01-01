@@ -1,0 +1,24 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: sentinel-training-job-v1
+  namespace: sentinel-prod
+spec:
+  # 1. TELL IT WHERE TO RUN
+  # This targets your existing RayCluster (check name via 'kubectl get raycluster')
+  clusterSelector:
+    ray.io/cluster: sentinel-training-cluster
+
+  # 2. THE COMMAND
+  # Note: We run the script from the mounted path /app/train
+  entrypoint: python /app/train/train_recommend.py
+
+  submitterPodTemplate:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: ray-job-submitter
+        image: duyuyang545/sentinel-train:v6
+        env:
+        - name: RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S
+          value: "300"

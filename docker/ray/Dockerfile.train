@@ -1,10 +1,12 @@
 FROM rayproject/ray:2.53.0-aarch64
 
 # Dependencies required for training
-RUN pip3 install --no-cache-dir torch torchvision ray[train]
+RUN pip3 install --no-cache-dir torch torchvision ray[train] lightning
 
 USER root
 RUN mkdir -p /app
 
 # Set the working directory
 WORKDIR /app
+
+COPY train/ /app/train
