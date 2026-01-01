@@ -1,24 +1,30 @@
 apiVersion: ray.io/v1
 kind: RayJob
 metadata:
-  name: sentinel-training-job-v1
+  name: recommend-tuning-job-v3
   namespace: sentinel-prod
 spec:
   # 1. TELL IT WHERE TO RUN
   # This targets your existing RayCluster (check name via 'kubectl get raycluster')
   clusterSelector:
-    ray.io/cluster: sentinel-training-cluster
+    ray.io/cluster: sentinel-tuning-cluster
 
   # 2. THE COMMAND
   # Note: We run the script from the mounted path /app/train
-  entrypoint: python /app/train/train_recommend.py
+  entrypoint: python /app/tune/tune_recommend.py
+  # entrypoint: sleep 300
+
+  runtimeEnvYAML: |
+    env_vars:
+      RAY_TRAIN_V2_ENABLED: "0"
 
   submitterPodTemplate:
     spec:
       restartPolicy: Never
       containers:
       - name: ray-job-submitter
-        image: duyuyang545/sentinel-train:v6
+        image: duyuyang545/sentinel-tune:v1.1
+        imagePullPolicy: Always
         env:
         - name: RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S
           value: "300"

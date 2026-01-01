@@ -1,7 +1,7 @@
 apiVersion: ray.io/v1
 kind: RayCluster
 metadata:
-  name: sentinel-training-cluster
+  name: sentinel-tuning-cluster
   namespace: sentinel-prod
 spec:
   rayVersion: '2.53.0' # Matches the image version below
@@ -21,7 +21,7 @@ spec:
         serviceAccountName: ray-service-account
         containers:
         - name: ray-head
-          image: duyuyang545/sentinel-train:v8
+          image: duyuyang545/sentinel-tune:v1.1
           env:
           - name: RAY_PROMETHEUS_HOST
             value: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
@@ -31,10 +31,10 @@ spec:
             value: "http://localhost:3000"
           resources:
             limits:
-              cpu: "1"
+              cpu: "2"
               memory: "4Gi"
             requests:
-              cpu: "1"
+              cpu: "2"
               memory: "4Gi"
           ports:
           - containerPort: 8265
@@ -52,11 +52,11 @@ spec:
         serviceAccountName: ray-service-account
         containers:
         - name: ray-worker
-          image: duyuyang545/sentinel-train:v8
+          image: duyuyang545/sentinel-tune:v1.1
           resources:
             limits:
-              cpu: "1"
+              cpu: "2"
               memory: "4Gi"
             requests:
-              cpu: "1"
+              cpu: "2"
               memory: "4Gi"
