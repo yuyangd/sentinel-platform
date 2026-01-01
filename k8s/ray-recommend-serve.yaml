@@ -8,6 +8,19 @@ spec:
   serviceUnhealthySecondThreshold: 900
   deploymentUnhealthySecondThreshold: 300
 
+  serveService:
+      metadata:
+        name: sentinel-recommend-serve-svc
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+          service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Owner=du.y,Project=training,rea-system-id=x-du-yuyang"
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 8000
+          targetPort: 8000
+          name: serve
+
   # 2. Application Config
   serveConfigV2: |
     applications:
@@ -45,9 +58,10 @@ spec:
         dashboard-host: '0.0.0.0'
       template:
         spec:
+          serviceAccountName: ray-service-account
           containers:
           - name: ray-head
-            image: duyuyang545/sentinel-serve:v2.2
+            image: duyuyang545/sentinel-serve:v2.3
             resources:
               limits:
                 cpu: "500m"
@@ -73,9 +87,10 @@ spec:
           nodeSelector:
             intention: training
             lifecycle: Ec2Spot
+          serviceAccountName: ray-service-account
           containers:
           - name: ray-worker
-            image: duyuyang545/sentinel-serve:v2.2
+            image: duyuyang545/sentinel-serve:v2.3
             resources:
               limits:
                 cpu: "500m"

@@ -44,7 +44,8 @@ class MovieRecommender:
             
             # Load the Model
             # Note: strict=False allows us to ignore minor mismatch in graph wrapper
-            self.model = MatrixFactorization.load_from_checkpoint(ckpt_path, strict=False)
+            # We set weights_only=False because the checkpoint contains Numpy scalars
+            self.model = MatrixFactorization.load_from_checkpoint(ckpt_path, strict=False, weights_only=False)
             self.model.eval() # Set to inference mode (freezes dropout, etc)
 
     async def __call__(self, http_request: Request) -> Dict:

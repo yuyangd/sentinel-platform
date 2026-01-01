@@ -4,8 +4,17 @@ Sentinel is a reference implementation of a modern **AI Infrastructure Platform*
 
 It demonstrates how to provision and manage a distributed compute environment for Machine Learning (using **Ray**) on top of Kubernetes, following **Infrastructure-as-Code** (IaC) principles with Terraform.
 
+## Platform
+
+- Infrastructure: Kubernetes (EKS/K3s) + KubeRay Operator.
+- Orchestration: Ray Jobs for transient workloads
+- Training: Distributed PyTorch via Ray Train (Data Parallelism).
+- Optimization: Ray Tune with ASHA Scheduler (Early stopping saved you ~80% compute on bad trials).
+- Serving: Ray Serve with Identity-Aware deployment (IAM Roles/Secrets).
+- Cicd/Ops: Immutable Infrastructure (Dockerized code) + Declarative Config (YAML scaling rules).
+
 ## Tech Stack
-* **Orchestration:** Kubernetes (Kind)
+* **Orchestration:** Kubernetes (Kind/EKS)
 * **Compute Framework:** KubeRay (Ray Cluster)
 * **IaC:** Terraform
 * **Scripting:** Python
@@ -187,6 +196,22 @@ kubectl edit clusterrole cluster-autoscaler
 kubectl delete pod -n kube-system -l app=cluster-autoscaler
 ```
 
+## Train/Tune/Serve recommend model
+
+The Architecture:
+
+- Compute: Kubernetes (EKS) with KubeRay for orchestration.
+- Model: PyTorch Matrix Factorization (trained via Ray Train, tuned via Ray Tune).
+- Serving: Ray Serve for high-throughput inference behind an AWS NLB.
+- Infrastructure: IAM-integrated security (no hardcoded keys) and Docker-based immutable deployments.
+
+```bash
+# Ask for predictions
+curl -X POST http://a62d0fc501b8743ca8f2ec0d334108a0-a0eec30244505014.elb.ap-southeast-2.amazonaws.com:8000/recommend \
+  -H "Content-Type: application/json" \
+  -d '{ "user_id": 42, "movie_ids": [100, 200, 300] }'
+```
+
 ## Clean the eks cluster
 
 Scale down the workers
@@ -222,3 +247,4 @@ eksctl scale nodegroup --cluster du-yuyang-training --name managed-ng-1 --nodes 
 kubectl scale deployment coredns -n kube-system --replicas=2
 kubectl scale deployment metrics-server -n kube-system --replicas=1
 ```
+
