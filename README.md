@@ -146,6 +146,16 @@ brew install aws/tap/eksctl
 
 ### Create an EKS cluster
 
+Terraform:
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+
 ```
 eksctl create cluster -f eks/cluster.yaml --with-oidc
 ```
